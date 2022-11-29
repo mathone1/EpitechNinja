@@ -24,6 +24,7 @@ worker.addEventListener('install', (event) => {
 	event.waitUntil(caches.open('actor_images'));
 	event.waitUntil(caches.open('overall_progress'));
 	event.waitUntil(caches.open('available_items'));
+	event.waitUntil(caches.open('movie_backdrops'));
 });
 
 worker.addEventListener('activate', (event) => {
@@ -35,7 +36,8 @@ worker.addEventListener('activate', (event) => {
 					&& key !== 'movie_posters'
 					&& key != 'actor_images'
 					&& key != 'overall_progress'
-					&& key != 'available_movies')
+					&& key != 'available_movies'
+					&& key != 'movie_backdrops')
 					await caches.delete(key);
 			}
 
@@ -72,6 +74,20 @@ worker.addEventListener('fetch', (event) => {
 	// Fetch Movie Poster -> if on cache returns it else fetch and save it.
 	if (event.request.method == 'GET' && (/^\/images\/movie\/[0-9]+\/poster\/[a-zA-Z]{2}$/i.test(url.pathname) || /^\/api\/images\/movie\/[0-9]+\/poster\/[a-zA-Z]{2}$/i.test(url.pathname))) {
 		event.respondWith(caches.open('movie_posters').then(cache => {
+			return cache.match(event.request.url).then(cachedResponse => {
+				return cachedResponse || fetch(event.request.url).then(fetchedResponse => {
+					cache.put(event.request.url, fetchedResponse.clone());
+					return fetchedResponse;
+				});
+			});
+		}));
+
+		return;
+	}
+
+	// Fetch Movie Backdrop -> if on cache returns it else fetch and save it.
+	if (event.request.method == 'GET' && (/^\/images\/movie\/[0-9]+\/backdrop\/[a-zA-Z]{2}$/i.test(url.pathname) || /^\/api\/images\/movie\/[0-9]+\/backdrop\/[a-zA-Z]{2}$/i.test(url.pathname))) {
+		event.respondWith(caches.open('movie_backdrops').then(cache => {
 			return cache.match(event.request.url).then(cachedResponse => {
 				return cachedResponse || fetch(event.request.url).then(fetchedResponse => {
 					cache.put(event.request.url, fetchedResponse.clone());
