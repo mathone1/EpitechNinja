@@ -1,0 +1,29 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+div.safePadding {
+  padding-top: env(safe-area-inset-top);
+  padding-bottom: env(safe-area-inset-bottom);
+}
+
+div.topSafePadding {
+  padding-top: env(safe-area-inset-top);
+}
+
+div.bottomSafePadding {
+  padding-bottom: env(safe-area-inset-bottom);
+}
+
+div.safeMargin {
+  margin-top: env(safe-area-inset-top);
+  margin-bottom: env(safe-area-inset-bottom);
+}
+
+div.topSafeMargin {
+  margin-top: env(safe-area-inset-top);
+}
+
+div.bottomSafeMargin {
+  margin-bottom: env(safe-area-inset-bottom);
+}

@@ -12,6 +12,7 @@ const to_cache = build.concat(files);
 const staticAssets = new Set(to_cache);
 
 worker.addEventListener('install', (event) => {
+	console.log('Service Worker installing.');
 	event.waitUntil(
 		caches
 			.open(FILES)
@@ -28,6 +29,7 @@ worker.addEventListener('install', (event) => {
 });
 
 worker.addEventListener('activate', (event) => {
+	console.log('Service Worker activating.');
 	event.waitUntil(
 		caches.keys().then(async (keys) => {
 			// delete old caches except posters cache
@@ -114,7 +116,7 @@ worker.addEventListener('fetch', (event) => {
 	}
 
 	// Network first progress ->
-	if (event.request.method == 'GET' && (/^\/progress\/$/i.test(url.pathname) || /^\/api\/progress\/$/i.test(url.pathname) )) {
+	if (event.request.method == 'GET' && (/^\/progress\/[0-9]\/$/i.test(url.pathname) || /^\/api\/progress\/[0-9]\/$/i.test(url.pathname) )) {
 
 		event.respondWith(caches.open('overall_progress').then((cache) => {
 			return fetch(event.request.url).then((fetchedResponse) => {
@@ -180,7 +182,7 @@ function syncProgress() {
 				if (progress[index].synced == false) {
 					console.log('\tSyncing show ' + progress[index].id + '..');
 
-					fetch(`${import.meta.env.VITE_API_URL}/progress/movie/` + progress[index].id, {
+					fetch(`${import.meta.env.VITE_API_URL}/progress/movie/${progress[index].id}/${progress[index].userId}`, {
 						method: 'POST',
 						headers: {'Content-Type': 'application/json'},
 						body: JSON.stringify({progress: progress[index].progress})
@@ -190,6 +192,7 @@ function syncProgress() {
 						if (data.status == 1) {
 							db.progress.put({
 								id: progress[index].id,
+								userId: progress[index].userId,
 								progress: progress[index].progress,
 								synced: true
 							}, { id: progress[index].id })
@@ -207,3 +210,55 @@ worker.addEventListener('sync', (event) => {
 		event.waitUntil(syncProgress());
 	}
 });
+
+worker.addEventListener('push', function(event) {
+	console.log('Push received.');
+
+	const pushData = event.data?.text();
+	console.log('Push content: ' + pushData)
+
+	let data, title: string, body;
+	try {
+		if (!pushData) throw 'Push data empty.';
+
+		data = JSON.parse(pushData);
+		title = data.title;
+		body = data.body;
+
+	} catch(e) {
+		title = "Untitled";
+		body = pushData;
+	}
+
+	const options = {
+		body: body,
+		icon: '/icon-192x192.png',
+		vibrate: [200, 100, 200, 100, 200, 100, 200],
+		data: {url: '/'}
+	};
+
+	console.log(title, options);
+
+	db.currentUser.toArray()
+	.then(users => {
+		for (let index in users) {
+			if (users[index].userId == 0) event.waitUntil(worker.registration.showNotification(title, options));
+		}
+	})
+
+})
+
+worker.addEventListener('notificationclick', (event) => {
+
+	event.notification.close();
+	event.waitUntil(clients.matchAll({type: 'window'})
+	.then((clientList) => {
+    for (const client of clientList) {
+      if ('focus' in client)
+        return client.focus();
+    }
+    if (clients.openWindow)
+      return clients.openWindow(event.notification.data.url);
+  }));
+
+})
