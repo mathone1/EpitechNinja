@@ -123,7 +123,7 @@ def saveMovieProgress(movieId=None, userId=None):
         return {'status': 0, 'error': 'Invalid movieId.'}, 400
 
       movie = Movie.fromDict(movieDict)
-      title = "{0} {1} a movie:".format('Mathieu' if userId == 1 else 'Thomas', 'watched' if progress == -1 else ('unwatched' if progress == 0 else 'stopped watching'))
+      title = "{0} {1} a movie:".format('Mathieu' if userId == 1 else ('You' if userId == 0 else 'Thomas'), 'watched' if progress == -1 else ('unwatched' if progress == 0 else 'stopped watching'))
       body = "{0}".format(movie.title.en)
 
       triggerPushNotifications(
