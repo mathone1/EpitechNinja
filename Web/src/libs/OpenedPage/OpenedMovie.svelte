@@ -38,7 +38,10 @@
   async function setAsWatched() {
     if (movieProgressWaitingSync) return;
 
-    // if ('serviceWorker' in navigator && 'SyncManager' in window) {
+    if ('serviceWorker' in navigator && 'SyncManager' in window) {
+
+      console.log('Offline sync available, initiating sync request..')
+
       try {
         await db.progress.put({
           id: movie.tmdbId,
@@ -52,24 +55,27 @@
 
       } catch (error) { console.error(error) }
 
-    // } else {
-    //   fetch(`${import.meta.env.VITE_API_URL}/progress/movie/${movie.tmdbId}/${browser ? localStorage.getItem('user') : 1}`, {
-		// 		method: 'POST',
-		// 		headers: {'Content-Type': 'application/json'},
-		// 		body: JSON.stringify({progress: movie.tmdbId})
-		// 	})
-    //   .then(result => result.json())
-		// 	.then(data => {
-		// 		if (data.status == 1) {
-    //       db.progress.put({
-    //         id: movie.tmdbId,
-    //         userId: currentUserId,
-    //         progress: movie.progress == -1 ? 0 : -1,
-    //         synced: true
-    //       }, { id: movie.tmdbId })
-    //     }
-    //   })
-    // }
+    } else {
+
+      console.log('Offline sync not available, fallback to fetch.')
+
+      fetch(`${import.meta.env.VITE_API_URL}/progress/movie/${movie.tmdbId}/${browser ? localStorage.getItem('user') : 1}`, {
+				method: 'POST',
+				headers: {'Content-Type': 'application/json'},
+				body: JSON.stringify({progress: movie.tmdbId})
+			})
+      .then(result => result.json())
+			.then(data => {
+				if (data.status == 1) {
+          db.progress.put({
+            id: movie.tmdbId,
+            userId: currentUserId,
+            progress: movie.progress == -1 ? 0 : -1,
+            synced: true
+          }, { id: movie.tmdbId })
+        }
+      })
+    }
 
   }
 

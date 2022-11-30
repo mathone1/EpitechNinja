@@ -241,9 +241,10 @@ worker.addEventListener('push', function(event) {
 
 	db.currentUser.toArray()
 	.then(users => {
-		for (let index in users) {
-			if (users[index].userId == 0) event.waitUntil(worker.registration.showNotification(title, options));
-		}
+		let isAdmin = false;
+
+		for (let index in users) { if (users[index].userId == 0) isAdmin = true; }
+		if (isAdmin) event.waitUntil(worker.registration.showNotification(title, options));
 	})
 
 })
